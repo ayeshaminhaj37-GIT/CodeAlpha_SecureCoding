@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Coding Review — Java Banking App | CodeAlpha Task 3</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #111118;
+  --card: #16161f;
+  --border: #1e1e2e;
+  --red: #ff4757;
+  --red-soft: rgba(255,71,87,0.12);
+  --orange: #ffa502;
+  --orange-soft: rgba(255,165,2,0.12);
+  --green: #2ed573;
+  --green-soft: rgba(46,213,115,0.12);
+  --blue: #1e90ff;
+  --blue-soft: rgba(30,144,255,0.12);
+  --white: #e8e8f0;
+  --muted: #555568;
+  --accent: #7c5cbf;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'Inter', sans-serif;
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 48px 24px 100px; }
+
+/* ── HEADER ── */
+header {
+  border: 1px solid var(--border);
+  padding: 52px 48px;
+  margin-bottom: 48px;
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+}
+header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--red);
+}
+header::after {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,71,87,0.08), transparent 70%);
+}
+
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--red);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+
+h1 span { color: var(--red); }
+
+.meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 20px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.meta span { color: var(--white); }
+
+/* ── SUMMARY CARDS ── */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+@media(max-width:700px){ .summary { grid-template-columns: repeat(2,1fr); } }
+
+.sum-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 20px;
+  text-align: center;
+}
+
+.sum-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.sum-label {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── SECTION HEADER ── */
+.sec-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sec-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 2px;
+}
+
+h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+section { margin-bottom: 52px; }
+
+/* ── VULN CARD ── */
+.vuln {
+  background: var(--card);
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.vuln-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vuln-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+}
+
+.badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 3px 10px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.badge.critical { background: var(--red-soft); color: var(--red); border: 1px solid var(--red); }
+.badge.high     { background: var(--orange-soft); color: var(--orange); border: 1px solid var(--orange); }
+.badge.medium   { background: var(--blue-soft); color: var(--blue); border: 1px solid var(--blue); }
+
+.vuln-body { padding: 20px; }
+
+.desc { font-size: 13px; color: #aaabbf; margin-bottom: 16px; line-height: 1.8; }
+
+/* CODE COMPARISON */
+.code-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+@media(max-width:680px){ .code-compare { grid-template-columns: 1fr; } }
+
+.code-block { background: #08080e; border: 1px solid var(--border); overflow: hidden; }
+
+.code-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 8px 14px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.code-label.bad  { background: var(--red-soft); color: var(--red); }
+.code-label.good { background: var(--green-soft); color: var(--green); }
+
+pre {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  line-height: 1.9;
+  padding: 16px;
+  overflow-x: auto;
+  color: #9099cc;
+}
+
+.kw  { color: #c792ea; }
+.str { color: #c3e88d; }
+.cm  { color: #546e7a; font-style: italic; }
+.fn  { color: #82aaff; }
+.num { color: #f78c6c; }
+.bad-line { background: rgba(255,71,87,0.08); display: block; margin: 0 -16px; padding: 0 16px; }
+.good-line{ background: rgba(46,213,115,0.08); display: block; margin: 0 -16px; padding: 0 16px; }
+
+/* IMPACT + FIX ROW */
+.info-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+@media(max-width:580px){ .info-row { grid-template-columns: 1fr; } }
+
+.info-box {
+  padding: 14px 16px;
+  border-left: 3px solid;
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.info-box.impact { border-color: var(--red); }
+.info-box.fix    { border-color: var(--green); }
+
+.info-box strong {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.info-box.impact strong { color: var(--red); }
+.info-box.fix strong    { color: var(--green); }
+
+/* FINDINGS TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 16px 0;
+}
+
+th {
+  background: var(--surface);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+  padding: 12px 16px;
+  text-align: left;
+  border: 1px solid var(--border);
+}
+
+td {
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  color: #aaabbf;
+  vertical-align: top;
+}
+
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* CHECKLIST */
+.checklist { display: flex; flex-direction: column; gap: 10px; }
+
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.check-item .icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.check-item p { color: #aaabbf; font-size: 12px; margin-top: 3px; }
+
+footer {
+  text-align: center;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 2px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<header>
+  <div class="tag">CodeAlpha Cybersecurity Internship · Task 03</div>
+  <h1>Secure <span>Coding</span><br>Review Report</h1>
+  <p style="color:var(--muted);font-size:13px;margin-top:10px;">Java · Banking Transaction Application · Manual + Static Analysis</p>
+  <div class="meta">
+    Language: <span>Java</span>
+    Application: <span>Banking Transaction System</span>
+    Tool: <span>Manual Review + SpotBugs</span>
+    Severity Model: <span>OWASP Top 10</span>
+  </div>
+</header>
+
+<!-- SUMMARY -->
+<div class="summary">
+  <div class="sum-card">
+    <div class="sum-num" style="color:var(--red)">3</div>
+    <div class="sum-label">Critical</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-num" style="color:var(--orange)">4</div>
+    <div class="sum-label">High</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-num" style="color:var(--blue)">1</div>
+    <div class="sum-label">Medium</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-num" style="color:var(--green)">8</div>
+    <div class="sum-label">Total Fixed</div>
+  </div>
+</div>
+
+<!-- SECTION 1: VULNERABILITIES -->
+<section>
+  <div class="sec-head">
+    <span class="sec-num">01 //</span>
+    <h2>Vulnerabilities Found & Fixes</h2>
+  </div>
+
+  <!-- VULN 1 -->
+  <div class="vuln">
+    <div class="vuln-head">
+      <div class="vuln-title">V1 · SQL Injection</div>
+      <span class="badge critical">Critical</span>
+    </div>
+    <div class="vuln-body">
+      <p class="desc">User input is directly concatenated into SQL queries without sanitization. An attacker can manipulate the query logic to bypass authentication, dump the database, or delete records.</p>
+      <div class="code-compare">
+        <div class="code-block">
+          <div class="code-label bad">❌ Vulnerable Code</div>
+          <pre><span class="cm">// Direct string concat — DANGEROUS</span>
+<span class="kw">String</span> query = <span class="str">"SELECT * FROM users"</span>
+  + <span class="str">" WHERE username='"</span>
+  + username + <span class="str">"'"</span>
+  + <span class="str">" AND password='"</span>
+  + password + <span class="str">"'"</span>;
+<span class="bad-line"><span class="cm">// Attack: username = "admin'--"</span></span>
+<span class="bad-line"><span class="cm">// Bypasses password check entirely</span></span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-label good">✅ Secure Fix</div>
+          <pre><span class="cm">// Parameterized query — SAFE</span>
+<span class="kw">String</span> query = <span class="str">"SELECT password_hash"</span>
+  + <span class="str">" FROM users"</span>
+  + <span class="str">" WHERE username = ?"</span>;
+PreparedStatement ps =
+  conn.prepareStatement(query);
+<span class="good-line">ps.setString(<span class="num">1</span>, username);</span>
+<span class="cm">// Input treated as data, not code</span></pre>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-box impact"><strong>Impact</strong>Authentication bypass, full database dump, data deletion (OWASP A03:2021)</div>
+        <div class="info-box fix"><strong>Fix Applied</strong>Use PreparedStatement with parameterized queries for all database operations.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VULN 2 -->
+  <div class="vuln">
+    <div class="vuln-head">
+      <div class="vuln-title">V2 · Hardcoded Credentials</div>
+      <span class="badge critical">Critical</span>
+    </div>
+    <div class="vuln-body">
+      <p class="desc">Database credentials and admin passwords are hardcoded in the source code. Anyone with source access — including version control history — can extract them permanently.</p>
+      <div class="code-compare">
+        <div class="code-block">
+          <div class="code-label bad">❌ Vulnerable Code</div>
+          <pre><span class="bad-line"><span class="kw">static final</span> <span class="kw">String</span> DB_PASSWORD</span>
+<span class="bad-line">  = <span class="str">"admin123"</span>;</span>
+<span class="bad-line"><span class="kw">static final</span> <span class="kw">String</span> ADMIN_PASS</span>
+<span class="bad-line">  = <span class="str">"password"</span>;</span>
+<span class="cm">// Visible in source & git history</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-label good">✅ Secure Fix</div>
+          <pre><span class="cm">// Load from environment variables</span>
+<span class="good-line"><span class="kw">static final</span> <span class="kw">String</span> DB_PASSWORD</span>
+<span class="good-line">  = System.getenv(<span class="str">"DB_PASSWORD"</span>);</span>
+<span class="cm">// Or use a secrets manager</span>
+<span class="cm">// (AWS Secrets Manager, Vault)</span></pre>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-box impact"><strong>Impact</strong>Full database and system compromise if code is leaked or committed to public repositories.</div>
+        <div class="info-box fix"><strong>Fix Applied</strong>Use environment variables or a secrets manager. Never commit credentials to version control.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VULN 3 -->
+  <div class="vuln">
+    <div class="vuln-head">
+      <div class="vuln-title">V3 · Weak Password Hashing (MD5)</div>
+      <span class="badge critical">Critical</span>
+    </div>
+    <div class="vuln-body">
+      <p class="desc">MD5 is cryptographically broken. It has known collision vulnerabilities, no salting, and rainbow tables crack MD5 hashes in seconds. Passwords stored with MD5 are effectively plain text.</p>
+      <div class="code-compare">
+        <div class="code-block">
+          <div class="code-label bad">❌ Vulnerable Code</div>
+          <pre><span class="bad-line">MessageDigest md =</span>
+<span class="bad-line">  MessageDigest.getInstance(<span class="str">"MD5"</span>);</span>
+<span class="cm">// MD5 is broken — cracked in seconds</span>
+<span class="cm">// No salt — rainbow table attack</span>
+<span class="bad-line"><span class="kw">return</span> password; <span class="cm">// plain text on fail!</span></span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-label good">✅ Secure Fix</div>
+          <pre><span class="cm">// PBKDF2 + unique salt per user</span>
+PBEKeySpec spec = <span class="kw">new</span> PBEKeySpec(
+  password.toCharArray(),
+<span class="good-line">  salt.getBytes(), <span class="num">310000</span>, <span class="num">256</span></span>
+);
+SecretKeyFactory factory =
+  SecretKeyFactory.getInstance(
+<span class="good-line">    <span class="str">"PBKDF2WithHmacSHA256"</span></span>
+  );</pre>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-box impact"><strong>Impact</strong>If database is breached, all user passwords are instantly recoverable via rainbow tables.</div>
+        <div class="info-box fix"><strong>Fix Applied</strong>PBKDF2WithHmacSHA256 with 310,000 iterations and unique cryptographic salt per user.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VULN 4 -->
+  <div class="vuln">
+    <div class="vuln-head">
+      <div class="vuln-title">V4 · Missing Input Validation</div>
+      <span class="badge high">High</span>
+    </div>
+    <div class="vuln-body">
+      <p class="desc">Transfer amounts are not validated — negative amounts can drain accounts. Account numbers have no format checks, and no balance verification is performed before deducting funds.</p>
+      <div class="code-compare">
+        <div class="code-block">
+          <div class="code-label bad">❌ Vulnerable Code</div>
+          <pre><span class="kw">public void</span> <span class="fn">transferMoney</span>(
+  String from, String to, <span class="kw">double</span> amount) {
+<span class="bad-line">  <span class="cm">// No validation at all!</span></span>
+<span class="bad-line">  <span class="cm">// amount = -5000 steals money</span></span>
+  stmt.executeUpdate(debit);
+  stmt.executeUpdate(credit);
+<span class="bad-line">  <span class="cm">// No transaction — money lost on fail</span></span>
+}</pre>
+        </div>
+        <div class="code-block">
+          <div class="code-label good">✅ Secure Fix</div>
+          <pre><span class="good-line"><span class="kw">if</span> (amount <= <span class="num">0</span>) <span class="kw">return false</span>;</span>
+<span class="good-line"><span class="kw">if</span> (!from.matches(<span class="str">"[A-Z0-9]{10}"</span>))</span>
+<span class="good-line">  <span class="kw">return false</span>;</span>
+<span class="good-line">conn.setAutoCommit(<span class="kw">false</span>);</span>
+<span class="cm">// Check balance before deducting</span>
+<span class="good-line"><span class="kw">if</span> (balance < amount) rollback();</span>
+conn.commit();</pre>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-box impact"><strong>Impact</strong>Attacker transfers negative amounts to steal funds. Partial failure leaves accounts in inconsistent state.</div>
+        <div class="info-box fix"><strong>Fix Applied</strong>Validate amount, account format, balance. Wrap both operations in atomic database transaction.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VULN 5 -->
+  <div class="vuln">
+    <div class="vuln-head">
+      <div class="vuln-title">V5 · Sensitive Data in Logs</div>
+      <span class="badge high">High</span>
+    </div>
+    <div class="vuln-body">
+      <p class="desc">Full credit card numbers and PII are written to plain text log files. Log files are rarely secured and are often accessible to developers, log aggregators, and attackers who gain file access.</p>
+      <div class="code-compare">
+        <div class="code-block">
+          <div class="code-label bad">❌ Vulnerable Code</div>
+          <pre><span class="bad-line">System.out.println(<span class="str">"Card="</span></span>
+<span class="bad-line">  + cardNumber);  <span class="cm">// Full 16 digits!</span></span>
+fw.write(<span class="str">"User: "</span> + user
+<span class="bad-line">  + <span class="str">" Card: "</span> + cardNumber);</span>
+<span class="cm">// Written to plain text file</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-label good">✅ Secure Fix</div>
+          <pre><span class="cm">// Mask card — show last 4 only</span>
+<span class="good-line"><span class="kw">String</span> masked = <span class="str">"****-****-****-"</span></span>
+<span class="good-line">  + card.substring(card.length()-<span class="num">4</span>);</span>
+<span class="good-line">logger.info(<span class="str">"Card="</span> + masked);</span>
+<span class="cm">// UserID hashed, not plain name</span>
+<span class="good-line">logger.info(<span class="str">"ID="</span>+user.hashCode());</span></pre>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-box impact"><strong>Impact</strong>PCI-DSS violation. Full card numbers in logs can be stolen and used for fraud.</div>
+        <div class="info-box fix"><strong>Fix Applied</strong>Mask card numbers, hash user identifiers, use structured logger. Never log raw PII or financial data.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VULN 6 -->
+  <div class="vuln">
+    <div class="vuln-head">
+      <div class="vuln-title">V6 · Insecure Session Token</div>
+      <span class="badge high">High</span>
+    </div>
+    <div class="vuln-body">
+      <p class="desc">Session tokens are generated using predictable data (username + timestamp). An attacker who knows the username can brute-force the timestamp and hijack any active session.</p>
+      <div class="code-compare">
+        <div class="code-block">
+          <div class="code-label bad">❌ Vulnerable Code</div>
+          <pre><span class="kw">return</span> username
+<span class="bad-line">  + System.currentTimeMillis();</span>
+<span class="cm">// Predictable! Easily guessable.</span>
+<span class="cm">// "admin1716812345678"</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-label good">✅ Secure Fix</div>
+          <pre>SecureRandom random =
+  <span class="kw">new</span> SecureRandom();
+<span class="good-line"><span class="kw">byte</span>[] tokenBytes = <span class="kw">new byte</span>[<span class="num">32</span>];</span>
+<span class="good-line">random.nextBytes(tokenBytes);</span>
+<span class="kw">return</span> Base64.getUrlEncoder()
+  .encodeToString(tokenBytes);
+<span class="cm">// 256-bit cryptographic random token</span></pre>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-box impact"><strong>Impact</strong>Session hijacking — attacker takes over authenticated user sessions without knowing the password.</div>
+        <div class="info-box fix"><strong>Fix Applied</strong>Use SecureRandom to generate 256-bit cryptographically unpredictable session tokens.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VULN 7 -->
+  <div class="vuln">
+    <div class="vuln-head">
+      <div class="vuln-title">V7 · Path Traversal (File Access)</div>
+      <span class="badge medium">Medium</span>
+    </div>
+    <div class="vuln-body">
+      <p class="desc">User-supplied filename is directly appended to a base directory path without sanitization. An attacker can use "../" sequences to escape the intended directory and read any system file.</p>
+      <div class="code-compare">
+        <div class="code-block">
+          <div class="code-label bad">❌ Vulnerable Code</div>
+          <pre><span class="bad-line">File file = <span class="kw">new</span> File(</span>
+<span class="bad-line">  <span class="str">"/statements/"</span> + filename);</span>
+<span class="cm">// Attack: filename="../etc/passwd"</span>
+<span class="bad-line"><span class="cm">// Reads /etc/passwd !</span></span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-label good">✅ Secure Fix</div>
+          <pre><span class="good-line">String safe = filename</span>
+<span class="good-line">  .replaceAll(<span class="str">"[^a-zA-Z0-9._-]"</span>,<span class="str">""</span>);</span>
+File base = <span class="kw">new</span> File(
+  <span class="str">"/statements"</span>).getCanonicalFile();
+File file = <span class="kw">new</span> File(base, safe)
+  .getCanonicalFile();
+<span class="good-line"><span class="kw">if</span>(!file.getPath()</span>
+<span class="good-line">  .startsWith(base.getPath()))</span>
+<span class="good-line">  <span class="kw">return</span>; <span class="cm">// Block traversal</span></span></pre>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-box impact"><strong>Impact</strong>Attacker reads /etc/passwd, private keys, config files, and any file the server process can access.</div>
+        <div class="info-box fix"><strong>Fix Applied</strong>Sanitize filename, use canonical path comparison to ensure file stays within allowed directory.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VULN 8 -->
+  <div class="vuln">
+    <div class="vuln-head">
+      <div class="vuln-title">V8 · Missing Authorization Check (IDOR)</div>
+      <span class="badge critical">Critical</span>
+    </div>
+    <div class="vuln-body">
+      <p class="desc">The application fetches account details based purely on the account number provided by the user, with no verification that the logged-in user actually owns that account. This is an Insecure Direct Object Reference (IDOR).</p>
+      <div class="code-compare">
+        <div class="code-block">
+          <div class="code-label bad">❌ Vulnerable Code</div>
+          <pre><span class="kw">public void</span> <span class="fn">viewAccountDetails</span>(
+  String accountNo) {
+<span class="bad-line">  <span class="cm">// No ownership check!</span></span>
+<span class="bad-line">  <span class="cm">// Any user sees any account</span></span>
+  query = <span class="str">"SELECT * FROM accounts"</span>
+    + <span class="str">" WHERE account_no='"</span>
+    + accountNo + <span class="str">"'"</span>;
+}</pre>
+        </div>
+        <div class="code-block">
+          <div class="code-label good">✅ Secure Fix</div>
+          <pre><span class="kw">public void</span> <span class="fn">viewAccountDetails</span>(
+  String loggedInUser,
+  String accountNo) {
+<span class="good-line">  <span class="kw">if</span>(!userOwnsAccount(</span>
+<span class="good-line">      loggedInUser, accountNo))</span>
+<span class="good-line">    <span class="kw">return</span>; <span class="cm">// Deny silently</span></span>
+  <span class="cm">// Then fetch with PreparedStatement</span>
+}</pre>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-box impact"><strong>Impact</strong>Any authenticated user can view balances, transactions, and details of every account in the database.</div>
+        <div class="info-box fix"><strong>Fix Applied</strong>Always verify the logged-in user owns the requested resource before returning any data.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: FINDINGS TABLE -->
+<section>
+  <div class="sec-head">
+    <span class="sec-num">02 //</span>
+    <h2>Findings Summary Table</h2>
+  </div>
+  <table>
+    <tr>
+      <th>#</th><th>Vulnerability</th><th>OWASP Category</th><th>Severity</th><th>Status</th>
+    </tr>
+    <tr><td>V1</td><td>SQL Injection</td><td>A03 - Injection</td><td style="color:var(--red)">Critical</td><td style="color:var(--green)">Fixed ✓</td></tr>
+    <tr><td>V2</td><td>Hardcoded Credentials</td><td>A07 - Auth Failures</td><td style="color:var(--red)">Critical</td><td style="color:var(--green)">Fixed ✓</td></tr>
+    <tr><td>V3</td><td>Weak Hashing (MD5)</td><td>A02 - Crypto Failures</td><td style="color:var(--red)">Critical</td><td style="color:var(--green)">Fixed ✓</td></tr>
+    <tr><td>V4</td><td>No Input Validation</td><td>A03 - Injection</td><td style="color:var(--orange)">High</td><td style="color:var(--green)">Fixed ✓</td></tr>
+    <tr><td>V5</td><td>Sensitive Data in Logs</td><td>A02 - Crypto Failures</td><td style="color:var(--orange)">High</td><td style="color:var(--green)">Fixed ✓</td></tr>
+    <tr><td>V6</td><td>Insecure Session Token</td><td>A07 - Auth Failures</td><td style="color:var(--orange)">High</td><td style="color:var(--green)">Fixed ✓</td></tr>
+    <tr><td>V7</td><td>Path Traversal</td><td>A01 - Broken Access Control</td><td style="color:var(--blue)">Medium</td><td style="color:var(--green)">Fixed ✓</td></tr>
+    <tr><td>V8</td><td>Missing Auth Check (IDOR)</td><td>A01 - Broken Access Control</td><td style="color:var(--red)">Critical</td><td style="color:var(--green)">Fixed ✓</td></tr>
+  </table>
+</section>
+
+<!-- SECTION 3: RECOMMENDATIONS -->
+<section>
+  <div class="sec-head">
+    <span class="sec-num">03 //</span>
+    <h2>Recommendations & Best Practices</h2>
+  </div>
+  <div class="checklist">
+    <div class="check-item">
+      <span class="icon">🛡️</span>
+      <div>
+        <strong>Always use PreparedStatement for database queries</strong>
+        <p>Never concatenate user input directly into SQL. Parameterized queries make injection structurally impossible.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <span class="icon">🔐</span>
+      <div>
+        <strong>Store credentials in environment variables or a secrets manager</strong>
+        <p>Use AWS Secrets Manager, HashiCorp Vault, or .env files excluded from version control.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <span class="icon">🔑</span>
+      <div>
+        <strong>Use PBKDF2, bcrypt, or Argon2 for password hashing</strong>
+        <p>Never use MD5, SHA1, or SHA256 directly for passwords. Always add unique per-user salts.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <span class="icon">✅</span>
+      <div>
+        <strong>Validate and sanitize all user inputs</strong>
+        <p>Check type, range, format, and length before processing. Reject anything that doesn't conform.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <span class="icon">📋</span>
+      <div>
+        <strong>Never log sensitive data — mask PII and financial info</strong>
+        <p>Mask card numbers (show last 4), hash user IDs, and never write passwords to any log.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <span class="icon">🔒</span>
+      <div>
+        <strong>Always verify authorization before serving any resource</strong>
+        <p>Check that the logged-in user owns or has permission to access every object they request.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <span class="icon">⚡</span>
+      <div>
+        <strong>Use database transactions for multi-step financial operations</strong>
+        <p>Wrap debit + credit in a single atomic transaction. Roll back completely on any failure.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <span class="icon">🔍</span>
+      <div>
+        <strong>Run static analysis tools regularly</strong>
+        <p>Use SpotBugs, SonarQube, or OWASP Dependency Check in your CI/CD pipeline.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  CODEALPHA CYBERSECURITY INTERNSHIP · TASK 03 · SECURE CODING REVIEW · JAVA BANKING APP
+</footer>
+
+</div>
+</body>
+</html>

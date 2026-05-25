@@ -1,0 +1,5 @@
+Language: Java JDK 17+
+Static Analysis Tool: SpotBugs
+Security Framework: OWASP Top 10
+Library: javax.crypto (built-in Java)
+Library: java.security (built-in Java)
